@@ -52,6 +52,10 @@
 %token <std::string> WORD
 %token               NEWLINE
 %token               CHAR
+%token               ASSIGN
+%token               COMMENT
+%token <std::string> COMMAND
+%token <std::string> VALUE
 
 %locations
 
@@ -67,9 +71,13 @@ list
 item
   : UPPER   { driver.add_upper(); }
   | LOWER   { driver.add_lower(); }
+  | COMMAND { driver.add_command( $1 ); }
+  | VALUE   { driver.add_value( $1 ); }
   | WORD    { driver.add_word( $1 ); }
   | NEWLINE { driver.add_newline(); }
   | CHAR    { driver.add_char(); }
+  | ASSIGN    { driver.add_assign(); }
+  | COMMENT    { driver.add_comment(); }
   ;
 
 %%

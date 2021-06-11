@@ -29,7 +29,11 @@ public:
 
    void add_upper();
    void add_lower();
+   void add_command( const std::string &command );
+   void add_value( const std::string &value );
    void add_word( const std::string &word );
+   void add_assign();
+   void add_comment();
    void add_newline();
    void add_char();
 
@@ -40,7 +44,11 @@ private:
 
    std::size_t  chars      = 0;
    std::size_t  words      = 0;
+   std::size_t  commands   = 0;
+   std::size_t  values     = 0;
    std::size_t  lines      = 0;
+   std::size_t  comments   = 0;
+   std::size_t  assigns    = 0;
    std::size_t  uppercase  = 0;
    std::size_t  lowercase  = 0;
    MC::MC_Parser  *parser  = nullptr;

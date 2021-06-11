@@ -27,20 +27,33 @@ using token = MC::MC_Parser::token;
 %option noyywrap
 %option c++
 
+Alpha       [a-zA-Z]
+AlphaU      [a-zA-Z_]
+AlphaNum    [a-zA-Z0-9]
+AlphaNumU   [a-zA-Z0-9_]
+AlphaNumUD  [a-zA-Z0-9_.]
+AlphaNumSym [a-zA-Z0-9_.!@#%^&*+~:;?\]\[]
+Digit       [0-9]
+DigitU      [0-9_]
+Number      ({Digit}+)
+Integer     ([+-]?{Number})
+Decimal     ([+-]?{Digit}*"."{Number})
+Float       (({Integer}|{Decimal})[eE][+-]?{Number})
+Val         ({Integer}|{Decimal}|{Float})
+EQ          =
+
 %%
 %{          /** Code executed at the beginning of yylex **/
             yylval = lval;
 %}
 
-[a-z]       {
-               return( token::LOWER );
+^\*.+\n     {
+               loc->lines();
+               std::cout << "Comment : " << yytext; // newline is captured
+               return( token::COMMENT );
             }
 
-[A-Z]       {
-               return( token::UPPER );
-            }
-
-[a-zA-Z]+   {
+{Val}       {
                /**
                 * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
                 * following should work:
@@ -49,7 +62,38 @@ using token = MC::MC_Parser::token;
                 * ref: http://goo.gl/KLn0w2
                 */
                yylval->build< std::string >( yytext );
+               std::cout << "Value : " << yytext << std::endl;
+               return( token::VALUE );
+            }
+
+^\.{AlphaNumU}+   {
+               /**
+                * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
+                * following should work:
+                * yylval.build( yytext );
+                * but it doesn't.
+                * ref: http://goo.gl/KLn0w2
+                */
+               yylval->build< std::string >( yytext );
+               std::cout << "Command : " << yytext << std::endl;
+               return( token::COMMAND );
+            }
+
+{AlphaNumSym}+   {
+               /**
+                * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
+                * following should work:
+                * yylval.build( yytext );
+                * but it doesn't.
+                * ref: http://goo.gl/KLn0w2
+                */
+               yylval->build< std::string >( yytext );
+               std::cout << "Word : " << yytext << std::endl;
                return( token::WORD );
+            }
+{EQ}        {
+               std::cout << "Assignment : " << yytext << std::endl;
+               return ( token::ASSIGN);
             }
 
 \n          {

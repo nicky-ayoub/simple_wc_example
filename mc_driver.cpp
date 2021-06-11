@@ -91,11 +91,62 @@ MC::MC_Driver::add_lower()
 }
 
 void 
+MC::MC_Driver::add_assign()
+{ 
+   assigns++; 
+   chars++; 
+   words++; 
+}
+
+void 
+MC::MC_Driver::add_comment()
+{ 
+   comments++;  // Counting comment chars/words is ignored
+   lines++; 
+}
+
+void 
 MC::MC_Driver::add_word( const std::string &word )
 {
    words++; 
    chars += word.length();
    for(const char &c : word ){
+      if( islower( c ) )
+      { 
+         lowercase++; 
+      }
+      else if ( isupper( c ) ) 
+      { 
+         uppercase++; 
+      }
+   }
+}
+
+void 
+MC::MC_Driver::add_command( const std::string &command )
+{
+   commands++; 
+   words++; // A command is a word after all
+   chars += command.length();
+   for(const char &c : command ){
+      if( islower( c ) )
+      { 
+         lowercase++; 
+      }
+      else if ( isupper( c ) ) 
+      { 
+         uppercase++; 
+      }
+   }
+}
+
+void 
+MC::MC_Driver::add_value( const std::string &value )
+{
+   values++; 
+   words++; // A value is a word after all
+   chars += value.length();
+   for(const char &c : value ){
       if( islower( c ) )
       { 
          lowercase++; 
@@ -129,6 +180,9 @@ MC::MC_Driver::print( std::ostream &stream )
    stream << blue << "Lowercase: " << norm << lowercase << "\n";
    stream << blue << "Lines: " << norm << lines << "\n";
    stream << blue << "Words: " << norm << words << "\n";
+   stream << blue << "Commands: " << norm << commands << "\n";
+   stream << blue << "Values: " << norm << values << "\n";
+   stream << blue << "Assigns: " << norm << assigns << "\n";
    stream << blue << "Characters: " << norm << chars << "\n";
    return(stream);
 }
