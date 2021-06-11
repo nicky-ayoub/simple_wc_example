@@ -1,6 +1,8 @@
 %{
 /* C++ string header, for string ops below */
 #include <string>
+#include <iostream>
+#include <charconv>
 
 /* Implementation of yyFlexScanner */ 
 #include "mc_scanner.hpp"
@@ -62,7 +64,16 @@ EQ          =
                 * ref: http://goo.gl/KLn0w2
                 */
                yylval->build< std::string >( yytext );
-               std::cout << "Value : " << yytext << std::endl;
+
+               // Let's see if we can use c++17 to convert string to double:
+               const std::string str = yytext;
+               double value = 0.0;
+               auto [p, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+                if (ec != std::errc()) {
+                        std::cout << "Couldn't convert value for " << str;
+               }
+               
+               std::cout << "Value : " << yytext << '(' << value << ')' << std::endl;
                return( token::VALUE );
             }
 
