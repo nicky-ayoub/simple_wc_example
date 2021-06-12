@@ -2,7 +2,6 @@
 /* C++ string header, for string ops below */
 #include <string>
 #include <iostream>
-#include <charconv>
 
 /* Implementation of yyFlexScanner */ 
 #include "mc_scanner.hpp"
@@ -29,6 +28,9 @@ using token = MC::MC_Parser::token;
 %option noyywrap
 %option c++
 
+
+%x Spice
+
 Alpha       [a-zA-Z]
 AlphaU      [a-zA-Z_]
 AlphaNum    [a-zA-Z0-9]
@@ -42,6 +44,10 @@ Integer     ([+-]?{Number})
 Decimal     ([+-]?{Digit}*"."{Number})
 Float       (({Integer}|{Decimal})[eE][+-]?{Number})
 Val         ({Integer}|{Decimal}|{Float})
+Unit        [VvHhFf]
+ScaleFact   ([fFpPnNuUmMkKgG]|"MEG"|"meg"|"MI"|"mi")
+DQstring    ".*"
+SQstring    '.*'
 EQ          =
 
 %%
@@ -49,13 +55,22 @@ EQ          =
             yylval = lval;
 %}
 
-^\*.+\n     {
+
+    /* Title line is grabbed then we go into Spice mode */
+^.*\n        { 
+               BEGIN Spice;    
+               yylval->build< std::string >( yytext );
+               loc->lines();  
+               return (token::TITLE);
+            }
+
+<Spice>^\*.+$     {
                loc->lines();
-               std::cout << "Comment : " << yytext; // newline is captured
+               std::cout << "Comment : " << yytext << std::endl; 
                return( token::COMMENT );
             }
 
-{Val}       {
+<Spice>{Val}{ScaleFact}?{Unit}?      {
                /**
                 * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
                 * following should work:
@@ -64,20 +79,11 @@ EQ          =
                 * ref: http://goo.gl/KLn0w2
                 */
                yylval->build< std::string >( yytext );
-
-               // Let's see if we can use c++17 to convert string to double:
-               const std::string str = yytext;
-               double value = 0.0;
-               auto [p, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
-                if (ec != std::errc()) {
-                        std::cout << "Couldn't convert value for " << str;
-               }
-               
-               std::cout << "Value : " << yytext << '(' << value << ')' << std::endl;
+               std::cout << "Value : " << yytext << std::endl;
                return( token::VALUE );
             }
 
-^\.{AlphaNumU}+   {
+<Spice>^\.{AlphaNumU}+   {
                /**
                 * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
                 * following should work:
@@ -89,8 +95,49 @@ EQ          =
                std::cout << "Command : " << yytext << std::endl;
                return( token::COMMAND );
             }
+<Spice>^[cCrRlLxXmMjJqQiIvVtT]{AlphaNumU}+   {
+               /**
+                * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
+                * following should work:
+                * yylval.build( yytext );
+                * but it doesn't.
+                * ref: http://goo.gl/KLn0w2
+                */
+               yylval->build< std::string >( yytext );
+               std::cout << "Device : " << yytext << std::endl;
+               return( token::DEVICE );
+            }
 
-{AlphaNumSym}+   {
+
+<Spice>{DQstring}   {
+               /**
+                * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
+                * following should work:
+                * yylval.build( yytext );
+                * but it doesn't.
+                * ref: http://goo.gl/KLn0w2
+                */
+               yylval->build< std::string >( yytext );
+               std::cout << "Double quoted String : " << yytext << std::endl;
+               return( token::WORD );
+
+}
+
+<Spice>{SQstring}   {
+               /**
+                * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
+                * following should work:
+                * yylval.build( yytext );
+                * but it doesn't.
+                * ref: http://goo.gl/KLn0w2
+                */
+               yylval->build< std::string >( yytext );
+               std::cout << "Single quoted String : " << yytext << std::endl;
+               return( token::WORD );
+
+}
+
+<Spice>{AlphaNumSym}+   {
                /**
                 * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
                 * following should work:
@@ -102,20 +149,24 @@ EQ          =
                std::cout << "Word : " << yytext << std::endl;
                return( token::WORD );
             }
-{EQ}        {
+<Spice>{EQ}        {
                std::cout << "Assignment : " << yytext << std::endl;
                return ( token::ASSIGN);
             }
 
-\n          {
+<Spice>\n          {
                // Update line number
                loc->lines();
+               std::cout << std::endl;
                return( token::NEWLINE );
             }
 
-.           {
-               return( token::CHAR );
+<Spice>[\r\t\b ]       {
             }
+
+<Spice>.   {
+               std::cout << "ERROR " << yytext <<  std::endl;
+}
 %%
 
 

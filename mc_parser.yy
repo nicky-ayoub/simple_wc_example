@@ -47,37 +47,58 @@
 %define parse.assert
 
 %token               END    0     "end of file"
-%token               UPPER
-%token               LOWER
 %token <std::string> WORD
 %token               NEWLINE
-%token               CHAR
 %token               ASSIGN
 %token               COMMENT
 %token <std::string> COMMAND
+%token <std::string> DEVICE
+%token <std::string> TITLE
 %token <std::string> VALUE
+%token <std::string> FACTOR
+%token <std::string> UNIT
 
 %locations
 
 %%
 
-list_option : END | list END;
+spice_deck 
+: TITLE  { driver.add_title( $1 ); } END
+| TITLE  { driver.add_title( $1 ); } cards END
+
+cards
+  : 
+  | cards card
+  ;  
+
+card 
+  : control_card
+  | device_card
+  ;
+
+control_card 
+   : COMMAND {driver.add_command($1); } list NEWLINE;
+
+device_card 
+   : DEVICE {driver.add_device($1); } list NEWLINE;
 
 list
-  : item
-  | list item
+  : item 
+  | list item 
   ;
 
 item
-  : UPPER   { driver.add_upper(); }
-  | LOWER   { driver.add_lower(); }
-  | COMMAND { driver.add_command( $1 ); }
-  | VALUE   { driver.add_value( $1 ); }
-  | WORD    { driver.add_word( $1 ); }
+  : WORD    { driver.add_word( $1 ); }
   | NEWLINE { driver.add_newline(); }
-  | CHAR    { driver.add_char(); }
-  | ASSIGN    { driver.add_assign(); }
-  | COMMENT    { driver.add_comment(); }
+  | ASSIGN  { driver.add_assign(); }
+  | COMMENT { driver.add_comment(); }
+  | value
+  ;
+
+value 
+  : VALUE             {driver.add_value($1); }
+  | VALUE FACTOR      {driver.add_value($1, $2); }
+  | VALUE FACTOR UNIT  {driver.add_value($1,$2, $3); }
   ;
 
 %%

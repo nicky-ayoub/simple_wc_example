@@ -41,7 +41,7 @@ parser: mc_parser.yy
 	$(CXX) $(CXXFLAGS) -c -o parser.o mc_parser.tab.cc
 
 lexer: mc_lexer.l
-	flex --outfile=mc_lexer.yy.cc  $<
+	flex -d -T --outfile=mc_lexer.yy.cc  $<
 	$(CXX)  $(CXXFLAGS) -c mc_lexer.yy.cc -o lexer.o
 
 .PHONY: test
